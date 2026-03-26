@@ -8,9 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        /* ========================================================================
-           1. DESIGN SYSTEM (CSS Variables)
-           ======================================================================== */
         :root {
             --bg-color: #0f172a;
             --panel-bg: #1e293b;
@@ -24,9 +21,6 @@
             --card-bg: rgba(0, 0, 0, 0.3);
         }
 
-        /* ========================================================================
-           2. BASE STYLES & LAYOUT
-           ======================================================================== */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
@@ -38,11 +32,35 @@
             overscroll-behavior: none;
         }
 
-        .icon { vertical-align: middle; margin-right: 8px; }
+        /* --- Navigation Tabs --- */
+        .tabs-nav { display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 25px; }
+        .tab-link {
+            padding: 12px 24px; cursor: pointer; color: var(--text-muted); font-weight: 600;
+            border-radius: 8px 8px 0 0; transition: 0.2s; position: relative; bottom: -2px;
+        }
+        .tab-link.active { 
+            background: var(--panel-bg); color: var(--primary); 
+            border: 2px solid var(--border-color); border-bottom-color: var(--panel-bg); 
+        }
 
-        /* ========================================================================
-           3. FORM CONTROLS & BUTTONS
-           ======================================================================== */
+        .tab-content { display: none; background: var(--panel-bg); padding: 30px; border-radius: 0 12px 12px 12px; border: 2px solid var(--border-color); }
+        .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
+
+        /* --- Toggle Group (ZIP vs Folder) --- */
+        .toggle-group { 
+            display: flex; gap: 5px; margin-bottom: 20px; background: rgba(0,0,0,0.3); 
+            padding: 5px; border-radius: 10px; border: 1px solid var(--border-color);
+        }
+        .toggle-group input { display: none; }
+        .toggle-group label {
+            flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 7px;
+            color: var(--text-muted); font-size: 14px; font-weight: 600; transition: 0.2s;
+        }
+        .toggle-group input:checked + label {
+            background: var(--primary); color: white;
+        }
+
+        /* --- Form Elements --- */
         .field-group { margin-bottom: 20px; }
         .label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
 
@@ -63,70 +81,27 @@
         .btn-secondary { background: var(--border-color); color: white; margin-top: 15px; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ========================================================================
-           4. NAVIGATION & TABS
-           ======================================================================== */
-        .tabs-nav { display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 25px; }
-        .tab-link {
-            padding: 12px 24px; cursor: pointer; color: var(--text-muted); font-weight: 600;
-            border-radius: 8px 8px 0 0; transition: 0.2s; position: relative; bottom: -2px;
-        }
-        .tab-link.active { 
-            background: var(--panel-bg); color: var(--primary); 
-            border: 2px solid var(--border-color); border-bottom-color: var(--panel-bg); 
-        }
-
-        .tab-content { display: none; background: var(--panel-bg); padding: 30px; border-radius: 0 12px 12px 12px; border: 2px solid var(--border-color); }
-        .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* ========================================================================
-           5. GALLERY & PREVIEW
-           ======================================================================== */
-        #galleryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 25px; }
-        
-        .gallery-card { 
-            background: var(--card-bg); border: 1px solid var(--border-color); 
-            border-radius: 12px; padding: 10px; height: 280px; display: flex; flex-direction: column;
-        }
-
-        .img-container { 
-            flex: 1; overflow: hidden; background: #000; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; cursor: zoom-in;
-        }
+        /* --- Gallery --- */
+        #galleryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 25px; }
+        .gallery-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; height: 260px; display: flex; flex-direction: column; }
+        .img-container { flex: 1; overflow: hidden; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
         .img-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #btnLoadMore { display: none; margin-top: 20px; }
 
-        .card-actions { margin-top: 10px; }
-        .btn-sm { padding: 8px; font-size: 12px; }
-
-        /* ========================================================================
-           6. ZOOM LIGHTBOX & LOCK SCREEN
-           ======================================================================== */
-        #lightbox { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); 
-            z-index: 9999; flex-direction: column; touch-action: none; 
-        }
+        /* --- Overlays --- */
+        #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 9999; flex-direction: column; touch-action: none; }
         #lightbox.active { display: flex; }
         #zoomWrapper { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #zoomImage { max-width: 100%; max-height: 100%; transform-origin: center; transition: transform 0.1s ease-out; }
         
-        #lockScreen { 
-            display: none; position: fixed; inset: 0; background: var(--bg-color); 
-            z-index: 10000; flex-direction: column; align-items: center; justify-content: center; 
-        }
+        #lockScreen { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; }
         #lockScreen.active { display: flex; }
 
-        /* ========================================================================
-           7. TOASTS
-           ======================================================================== */
         #toasts { position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px; }
-        .toast { 
-            background: var(--panel-bg); color: #fff; padding: 12px 20px; border-radius: 8px; 
-            border-left: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 14px;
-            animation: toastIn 0.3s ease forwards;
-        }
+        .toast { background: var(--panel-bg); color: #fff; padding: 12px 20px; border-radius: 8px; border-left: 4px solid var(--primary); font-size: 14px; animation: toastIn 0.3s ease forwards; }
         .toast.error { border-left-color: var(--danger); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
@@ -135,7 +110,7 @@
     <div id="toasts"></div>
 
     <div id="lockScreen">
-        <h1 style="color: var(--danger);"><svg class="icon" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Session Expired</h1>
+        <h1 style="color: var(--danger);">🔒 Session Expired</h1>
         <p>Memory purged for your safety.</p>
         <button class="btn btn-primary" style="width: auto; margin-top: 20px;" onclick="location.reload()">Re-Authenticate</button>
     </div>
@@ -143,7 +118,7 @@
     <div id="lightbox">
         <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
             <span id="zoomTitle" style="font-weight: bold;">Preview</span>
-            <button class="btn btn-sm btn-secondary" style="width: auto; margin: 0;" onclick="Lightbox.close()">✕ Close</button>
+            <button class="btn btn-secondary" style="width: auto; margin: 0; padding: 8px 15px;" onclick="Lightbox.close()">✕ Close</button>
         </div>
         <div id="zoomWrapper">
             <img id="zoomImage" src="" />
@@ -152,17 +127,13 @@
     </div>
 
     <div class="tabs-nav">
-        <div class="tab-link active" onclick="Tabs.show('encryptTab')">
-            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Create Vault
-        </div>
-        <div class="tab-link" onclick="Tabs.show('decryptTab')">
-            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Open Vault
-        </div>
+        <div class="tab-link active" onclick="Tabs.show('encryptTab')">🔒 Create Vault</div>
+        <div class="tab-link" onclick="Tabs.show('decryptTab')">👁️ Open Vault</div>
     </div>
 
     <div id="encryptTab" class="tab-content active">
         <h2>Lock Images</h2>
-        <p class="label">Files are stripped of EXIF and encrypted locally.</p>
+        <p class="label">EXIF is stripped. Encryption happens locally.</p>
         
         <div class="field-group">
             <label class="label">Select Photos</label>
@@ -170,8 +141,8 @@
         </div>
 
         <div class="field-group">
-            <label class="label">Vault Password</label>
-            <input type="password" id="inputPassEnc" placeholder="Keep it secret, keep it safe...">
+            <label class="label">Set Vault Password</label>
+            <input type="password" id="inputPassEnc" placeholder="Minimum 8 characters">
         </div>
 
         <button id="btnRunEnc" class="btn btn-primary" onclick="App.runEncryption()">Encrypt & Export ZIP</button>
@@ -182,31 +153,31 @@
         
         <div class="toggle-group">
             <input type="radio" id="modeZip" name="decMode" value="zip" checked onchange="Tabs.toggleInputMode()">
-            <label for="modeZip">ZIP Archive</label>
+            <label for="modeZip">🗜️ ZIP Archive</label>
             <input type="radio" id="modeFolder" name="decMode" value="folder" onchange="Tabs.toggleInputMode()">
-            <label for="modeFolder">Folder</label>
+            <label for="modeFolder">📁 Folder</label>
         </div>
 
         <div id="boxZip" class="field-group">
-            <label class="label">Vault ZIP</label>
+            <label class="label">Select Vault ZIP</label>
             <input type="file" id="inputZip" accept=".zip">
         </div>
 
         <div id="boxFolder" class="field-group" style="display: none;">
-            <label class="label">Vault Folder</label>
+            <label class="label">Select Vault Folder</label>
             <input type="file" id="inputFolder" webkitdirectory directory multiple>
         </div>
 
         <div class="field-group">
-            <label class="label">Password</label>
+            <label class="label">Vault Password</label>
             <input type="password" id="inputPassDec" placeholder="Enter password">
         </div>
 
-        <button id="btnRunDec" class="btn btn-primary" onclick="App.runDecryption()">Unlock & View</button>
+        <button id="btnRunDec" class="btn btn-primary" onclick="App.runDecryption()">Unlock Vault</button>
         
-        <p id="batchStatus" style="text-align: center; font-size: 13px; color: var(--primary); margin-top: 15px;"></p>
+        <p id="batchStatus" style="text-align: center; font-size: 13px; color: var(--primary); margin-top: 15px; font-weight: bold;"></p>
         <div id="galleryGrid"></div>
-        <button id="btnLoadMore" class="btn btn-secondary" onclick="App.loadNextBatch()">Load Next 10 Images</button>
+        <button id="btnLoadMore" class="btn btn-secondary" onclick="App.loadNextBatch()">Load Next Batch</button>
     </div>
 
 <script>
@@ -218,16 +189,15 @@
 const CONFIG = {
     PBKDF2_ITERATIONS: 100000,
     BATCH_SIZE: 10,
-    INACTIVITY_TIMEOUT: 60000, // 60s
-    MAX_IMAGE_DIM: 4096 // 4K cap for GPU safety
+    INACTIVITY_TIMEOUT: 60000,
+    MAX_IMAGE_DIM: 4096
 };
 
 /**
  * ========================================================================
- * 2. CORE ENGINES
+ * 2. ENGINES
  * ========================================================================
  */
-
 const CryptoEngine = {
     _canvas: document.createElement('canvas'),
 
@@ -280,32 +250,33 @@ const SecurityVault = {
     },
 
     lock() {
-        this.purge();
+        this.clearGallery();
         document.getElementById('lockScreen').classList.add('active');
         Lightbox.close();
+        document.querySelectorAll('input').forEach(i => i.value = '');
     },
 
-    purge() {
+    clearGallery() {
         this.cache.clear();
         this.blobUrls.forEach(URL.revokeObjectURL);
         this.blobUrls = [];
         document.getElementById('galleryGrid').innerHTML = '';
-        document.querySelectorAll('input:not([type="radio"])').forEach(i => i.value = '');
+        document.getElementById('batchStatus').innerText = '';
+        document.getElementById('btnLoadMore').style.display = 'none';
     }
 };
 
 /**
  * ========================================================================
- * 3. UI COMPONENTS
+ * 3. UI
  * ========================================================================
  */
-
 const Tabs = {
     show(id) {
         document.querySelectorAll('.tab-content, .tab-link').forEach(e => e.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelector(`[onclick="Tabs.show('${id}')"]`).classList.add('active');
-        SecurityVault.purge();
+        SecurityVault.clearGallery();
     },
     toggleInputMode() {
         const isZip = document.getElementById('modeZip').checked;
@@ -323,11 +294,8 @@ const Tabs = {
 
 const Lightbox = {
     scale: 1, pos: { x: 0, y: 0 }, start: { x: 0, y: 0 }, isPanning: false,
-    
     init() {
         const over = document.getElementById('zoomOverlay');
-        const img = document.getElementById('zoomImage');
-        
         over.onmousedown = (e) => { this.isPanning = true; this.start = { x: e.clientX - this.pos.x, y: e.clientY - this.pos.y }; };
         window.onmouseup = () => this.isPanning = false;
         over.onmousemove = (e) => {
@@ -337,11 +305,9 @@ const Lightbox = {
         };
         over.onwheel = (e) => {
             e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.8 : 1.2;
-            this.scale *= delta;
+            this.scale *= (e.deltaY > 0 ? 0.8 : 1.2);
             this.update();
         };
-        // Mobile Support
         over.ontouchstart = (e) => {
             if (e.touches.length === 1) {
                 this.isPanning = true;
@@ -355,36 +321,30 @@ const Lightbox = {
         };
         over.ontouchend = () => this.isPanning = false;
     },
-
     open(id, name) {
         const bytes = SecurityVault.cache.get(id);
         const url = URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' }));
-        const img = document.getElementById('zoomImage');
-        img.src = url;
-        document.getElementById('zoomTitle').innerText = name;
+        document.getElementById('zoomImage').src = url;
+        document.getElementById('zoomTitle').innerText = name.replace('.enc','');
         document.getElementById('lightbox').classList.add('active');
         this.scale = 1; this.pos = { x: 0, y: 0 }; this.update();
     },
-
     close() {
         document.getElementById('lightbox').classList.remove('active');
         const img = document.getElementById('zoomImage');
         if (img.src) URL.revokeObjectURL(img.src);
         img.src = '';
     },
-
     update() {
-        const img = document.getElementById('zoomImage');
-        img.style.transform = `translate(${this.pos.x}px, ${this.pos.y}px) scale(${this.scale})`;
+        document.getElementById('zoomImage').style.transform = `translate(${this.pos.x}px, ${this.pos.y}px) scale(${this.scale})`;
     }
 };
 
 /**
  * ========================================================================
- * 4. APPLICATION LOGIC
+ * 4. APP WORKFLOW
  * ========================================================================
  */
-
 const App = {
     queue: [],
     idx: 0,
@@ -395,14 +355,14 @@ const App = {
         const pass = document.getElementById('inputPassEnc').value;
         const btn = document.getElementById('btnRunEnc');
 
-        if (!files.length || pass.length < 8) return Tabs.notify("Select images and a strong password.", "error");
+        if (!files.length || pass.length < 8) return Tabs.notify("Select images and set an 8+ char password.", "error");
 
         btn.disabled = true;
         try {
             const zip = new JSZip();
             for (const file of files) {
                 if (!file.type.startsWith('image/')) continue;
-                Tabs.notify(`Encrypting: ${file.name}`);
+                Tabs.notify(`Locking: ${file.name}`);
                 
                 const raw = await CryptoEngine.stripAndClean(file);
                 const salt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -415,7 +375,7 @@ const App = {
                 payload.set(salt, 0); payload.set(iv, 16); payload.set(new Uint8Array(encrypted), 28);
                 
                 zip.file(file.name + ".enc", payload);
-                await new Promise(r => setTimeout(r, 20)); // Yield to UI
+                await new Promise(r => setTimeout(r, 20));
             }
 
             const blob = await zip.generateAsync({ type: "blob" });
@@ -423,8 +383,7 @@ const App = {
             const a = document.createElement('a');
             a.href = url; a.download = `Vault_${Date.now()}.zip`; a.click();
             URL.revokeObjectURL(url);
-            Tabs.notify("Vault created!", "success");
-            SecurityVault.purge();
+            Tabs.notify("Success! ZIP Exported.", "success");
         } catch (e) {
             Tabs.notify("Encryption failed.", "error");
         } finally {
@@ -437,24 +396,27 @@ const App = {
         const pass = document.getElementById('inputPassDec').value;
         const btn = document.getElementById('btnRunDec');
 
-        SecurityVault.purge();
         if (!pass) return Tabs.notify("Enter password.", "error");
+        
+        // Clear previous results but KEEP inputs so password remains valid
+        SecurityVault.clearGallery();
         this.password = pass;
-
         btn.disabled = true;
+
         try {
             if (isZip) {
-                const file = document.getElementById('inputZip').files[0];
-                if (!file) throw new Error("Select ZIP.");
-                const zip = await JSZip.loadAsync(file);
+                const fileInput = document.getElementById('inputZip');
+                if (!fileInput.files.length) throw new Error("Please select the Vault ZIP file.");
+                const zip = await JSZip.loadAsync(fileInput.files[0]);
                 this.queue = [];
                 zip.forEach((path, entry) => { if (path.endsWith('.enc')) this.queue.push(entry); });
             } else {
-                const files = document.getElementById('inputFolder').files;
-                this.queue = Array.from(files).filter(f => f.name.endsWith('.enc'));
+                const folderInput = document.getElementById('inputFolder');
+                if (!folderInput.files.length) throw new Error("Please select the Vault folder.");
+                this.queue = Array.from(folderInput.files).filter(f => f.name.endsWith('.enc'));
             }
 
-            if (!this.queue.length) throw new Error("No encrypted files found.");
+            if (!this.queue.length) throw new Error("No .enc files found.");
             this.idx = 0;
             await this.loadNextBatch();
         } catch (e) {
@@ -471,7 +433,7 @@ const App = {
         btn.style.display = 'none';
 
         const end = Math.min(this.idx + CONFIG.BATCH_SIZE, this.queue.length);
-        status.innerText = `Unlocking ${this.idx + 1} to ${end}...`;
+        status.innerText = `Unlocking ${this.idx + 1} to ${end} of ${this.queue.length}...`;
 
         for (let i = this.idx; i < end; i++) {
             const entry = this.queue[i];
@@ -486,12 +448,16 @@ const App = {
                 const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
                 
                 this.renderCard(new Uint8Array(decrypted), entry.name);
-            } catch (e) { console.warn("Failed file:", entry.name); }
+            } catch (e) { 
+                console.error("Auth failed for file:", entry.name);
+                Tabs.notify("Wrong password or corrupted file.", "error");
+                return; // Stop processing on wrong password
+            }
             await new Promise(r => setTimeout(r, 20));
         }
 
         this.idx = end;
-        status.innerText = `Showing ${this.idx} of ${this.queue.length} items.`;
+        status.innerText = `Viewing ${this.idx} / ${this.queue.length} images`;
         if (this.idx < this.queue.length) btn.style.display = 'block';
     },
 
@@ -509,8 +475,8 @@ const App = {
             <div class="img-container" onclick="Lightbox.open('${id}', '${name}')">
                 <img src="${url}">
             </div>
-            <div class="card-actions">
-                <button class="btn btn-sm btn-secondary" onclick="App.saveFile('${id}', '${name}')">💾 Save</button>
+            <div class="card-actions" style="margin-top:10px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size:12px;" onclick="App.saveFile('${id}', '${name}')">💾 Save</button>
             </div>
         `;
         document.getElementById('galleryGrid').appendChild(div);
@@ -524,7 +490,6 @@ const App = {
         URL.revokeObjectURL(url);
     }
 };
-
 
 SecurityVault.init();
 Lightbox.init();

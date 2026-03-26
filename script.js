@@ -6,16 +6,15 @@
 const CONFIG = {
   PBKDF2_ITERATIONS: 100000,
   BATCH_SIZE: 10,
-  INACTIVITY_TIMEOUT: 60000, // 60s
-  MAX_IMAGE_DIM: 4096, // 4K cap for GPU safety
+  INACTIVITY_TIMEOUT: 60000,
+  MAX_IMAGE_DIM: 4096,
 };
 
 /**
  * ========================================================================
- * 2. CORE ENGINES
+ * 2. ENGINES
  * ========================================================================
  */
-
 const CryptoEngine = {
   _canvas: document.createElement("canvas"),
 
@@ -94,28 +93,27 @@ const SecurityVault = {
   },
 
   lock() {
-    this.purge();
+    this.clearGallery();
     document.getElementById("lockScreen").classList.add("active");
     Lightbox.close();
+    document.querySelectorAll("input").forEach((i) => (i.value = ""));
   },
 
-  purge() {
+  clearGallery() {
     this.cache.clear();
     this.blobUrls.forEach(URL.revokeObjectURL);
     this.blobUrls = [];
     document.getElementById("galleryGrid").innerHTML = "";
-    document
-      .querySelectorAll('input:not([type="radio"])')
-      .forEach((i) => (i.value = ""));
+    document.getElementById("batchStatus").innerText = "";
+    document.getElementById("btnLoadMore").style.display = "none";
   },
 };
 
 /**
  * ========================================================================
- * 3. UI COMPONENTS
+ * 3. UI
  * ========================================================================
  */
-
 const Tabs = {
   show(id) {
     document
@@ -125,7 +123,7 @@ const Tabs = {
     document
       .querySelector(`[onclick="Tabs.show('${id}')"]`)
       .classList.add("active");
-    SecurityVault.purge();
+    SecurityVault.clearGallery();
   },
   toggleInputMode() {
     const isZip = document.getElementById("modeZip").checked;
@@ -148,11 +146,8 @@ const Lightbox = {
   pos: { x: 0, y: 0 },
   start: { x: 0, y: 0 },
   isPanning: false,
-
   init() {
     const over = document.getElementById("zoomOverlay");
-    const img = document.getElementById("zoomImage");
-
     over.onmousedown = (e) => {
       this.isPanning = true;
       this.start = { x: e.clientX - this.pos.x, y: e.clientY - this.pos.y };
@@ -165,11 +160,9 @@ const Lightbox = {
     };
     over.onwheel = (e) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.8 : 1.2;
-      this.scale *= delta;
+      this.scale *= e.deltaY > 0 ? 0.8 : 1.2;
       this.update();
     };
-    // Mobile Support
     over.ontouchstart = (e) => {
       if (e.touches.length === 1) {
         this.isPanning = true;
@@ -189,38 +182,33 @@ const Lightbox = {
     };
     over.ontouchend = () => (this.isPanning = false);
   },
-
   open(id, name) {
     const bytes = SecurityVault.cache.get(id);
     const url = URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" }));
-    const img = document.getElementById("zoomImage");
-    img.src = url;
-    document.getElementById("zoomTitle").innerText = name;
+    document.getElementById("zoomImage").src = url;
+    document.getElementById("zoomTitle").innerText = name.replace(".enc", "");
     document.getElementById("lightbox").classList.add("active");
     this.scale = 1;
     this.pos = { x: 0, y: 0 };
     this.update();
   },
-
   close() {
     document.getElementById("lightbox").classList.remove("active");
     const img = document.getElementById("zoomImage");
     if (img.src) URL.revokeObjectURL(img.src);
     img.src = "";
   },
-
   update() {
-    const img = document.getElementById("zoomImage");
-    img.style.transform = `translate(${this.pos.x}px, ${this.pos.y}px) scale(${this.scale})`;
+    document.getElementById("zoomImage").style.transform =
+      `translate(${this.pos.x}px, ${this.pos.y}px) scale(${this.scale})`;
   },
 };
 
 /**
  * ========================================================================
- * 4. APPLICATION LOGIC
+ * 4. APP WORKFLOW
  * ========================================================================
  */
-
 const App = {
   queue: [],
   idx: 0,
@@ -232,14 +220,14 @@ const App = {
     const btn = document.getElementById("btnRunEnc");
 
     if (!files.length || pass.length < 8)
-      return Tabs.notify("Select images and a strong password.", "error");
+      return Tabs.notify("Select images and set an 8+ char password.", "error");
 
     btn.disabled = true;
     try {
       const zip = new JSZip();
       for (const file of files) {
         if (!file.type.startsWith("image/")) continue;
-        Tabs.notify(`Encrypting: ${file.name}`);
+        Tabs.notify(`Locking: ${file.name}`);
 
         const raw = await CryptoEngine.stripAndClean(file);
         const salt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -258,7 +246,7 @@ const App = {
         payload.set(new Uint8Array(encrypted), 28);
 
         zip.file(file.name + ".enc", payload);
-        await new Promise((r) => setTimeout(r, 20)); // Yield to UI
+        await new Promise((r) => setTimeout(r, 20));
       }
 
       const blob = await zip.generateAsync({ type: "blob" });
@@ -268,8 +256,7 @@ const App = {
       a.download = `Vault_${Date.now()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      Tabs.notify("Vault created!", "success");
-      SecurityVault.purge();
+      Tabs.notify("Success! ZIP Exported.", "success");
     } catch (e) {
       Tabs.notify("Encryption failed.", "error");
     } finally {
@@ -282,26 +269,33 @@ const App = {
     const pass = document.getElementById("inputPassDec").value;
     const btn = document.getElementById("btnRunDec");
 
-    SecurityVault.purge();
     if (!pass) return Tabs.notify("Enter password.", "error");
-    this.password = pass;
 
+    // Clear previous results but KEEP inputs so password remains valid
+    SecurityVault.clearGallery();
+    this.password = pass;
     btn.disabled = true;
+
     try {
       if (isZip) {
-        const file = document.getElementById("inputZip").files[0];
-        if (!file) throw new Error("Select ZIP.");
-        const zip = await JSZip.loadAsync(file);
+        const fileInput = document.getElementById("inputZip");
+        if (!fileInput.files.length)
+          throw new Error("Please select the Vault ZIP file.");
+        const zip = await JSZip.loadAsync(fileInput.files[0]);
         this.queue = [];
         zip.forEach((path, entry) => {
           if (path.endsWith(".enc")) this.queue.push(entry);
         });
       } else {
-        const files = document.getElementById("inputFolder").files;
-        this.queue = Array.from(files).filter((f) => f.name.endsWith(".enc"));
+        const folderInput = document.getElementById("inputFolder");
+        if (!folderInput.files.length)
+          throw new Error("Please select the Vault folder.");
+        this.queue = Array.from(folderInput.files).filter((f) =>
+          f.name.endsWith(".enc"),
+        );
       }
 
-      if (!this.queue.length) throw new Error("No encrypted files found.");
+      if (!this.queue.length) throw new Error("No .enc files found.");
       this.idx = 0;
       await this.loadNextBatch();
     } catch (e) {
@@ -318,7 +312,7 @@ const App = {
     btn.style.display = "none";
 
     const end = Math.min(this.idx + CONFIG.BATCH_SIZE, this.queue.length);
-    status.innerText = `Unlocking ${this.idx + 1} to ${end}...`;
+    status.innerText = `Unlocking ${this.idx + 1} to ${end} of ${this.queue.length}...`;
 
     for (let i = this.idx; i < end; i++) {
       const entry = this.queue[i];
@@ -340,13 +334,15 @@ const App = {
 
         this.renderCard(new Uint8Array(decrypted), entry.name);
       } catch (e) {
-        console.warn("Failed file:", entry.name);
+        console.error("Auth failed for file:", entry.name);
+        Tabs.notify("Wrong password or corrupted file.", "error");
+        return; // Stop processing on wrong password
       }
       await new Promise((r) => setTimeout(r, 20));
     }
 
     this.idx = end;
-    status.innerText = `Showing ${this.idx} of ${this.queue.length} items.`;
+    status.innerText = `Viewing ${this.idx} / ${this.queue.length} images`;
     if (this.idx < this.queue.length) btn.style.display = "block";
   },
 
@@ -364,8 +360,8 @@ const App = {
             <div class="img-container" onclick="Lightbox.open('${id}', '${name}')">
                 <img src="${url}">
             </div>
-            <div class="card-actions">
-                <button class="btn btn-sm btn-secondary" onclick="App.saveFile('${id}', '${name}')">💾 Save</button>
+            <div class="card-actions" style="margin-top:10px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size:12px;" onclick="App.saveFile('${id}', '${name}')">💾 Save</button>
             </div>
         `;
     document.getElementById("galleryGrid").appendChild(div);

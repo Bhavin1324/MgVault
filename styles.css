@@ -1,6 +1,3 @@
-/* ========================================================================
-           1. DESIGN SYSTEM (CSS Variables)
-           ======================================================================== */
 :root {
   --bg-color: #0f172a;
   --panel-bg: #1e293b;
@@ -14,9 +11,6 @@
   --card-bg: rgba(0, 0, 0, 0.3);
 }
 
-/* ========================================================================
-           2. BASE STYLES & LAYOUT
-           ======================================================================== */
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -29,14 +23,71 @@ body {
   overscroll-behavior: none;
 }
 
-.icon {
-  vertical-align: middle;
-  margin-right: 8px;
+/* --- Navigation Tabs --- */
+.tabs-nav {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 25px;
+}
+.tab-link {
+  padding: 12px 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-radius: 8px 8px 0 0;
+  transition: 0.2s;
+  position: relative;
+  bottom: -2px;
+}
+.tab-link.active {
+  background: var(--panel-bg);
+  color: var(--primary);
+  border: 2px solid var(--border-color);
+  border-bottom-color: var(--panel-bg);
 }
 
-/* ========================================================================
-           3. FORM CONTROLS & BUTTONS
-           ======================================================================== */
+.tab-content {
+  display: none;
+  background: var(--panel-bg);
+  padding: 30px;
+  border-radius: 0 12px 12px 12px;
+  border: 2px solid var(--border-color);
+}
+.tab-content.active {
+  display: block;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* --- Toggle Group (ZIP vs Folder) --- */
+.toggle-group {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+.toggle-group input {
+  display: none;
+}
+.toggle-group label {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.toggle-group input:checked + label {
+  background: var(--primary);
+  color: white;
+}
+
+/* --- Form Elements --- */
 .field-group {
   margin-bottom: 20px;
 }
@@ -92,74 +143,22 @@ input[type="password"]:focus {
   cursor: not-allowed;
 }
 
-/* ========================================================================
-           4. NAVIGATION & TABS
-           ======================================================================== */
-.tabs-nav {
-  display: flex;
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: 25px;
-}
-.tab-link {
-  padding: 12px 24px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 600;
-  border-radius: 8px 8px 0 0;
-  transition: 0.2s;
-  position: relative;
-  bottom: -2px;
-}
-.tab-link.active {
-  background: var(--panel-bg);
-  color: var(--primary);
-  border: 2px solid var(--border-color);
-  border-bottom-color: var(--panel-bg);
-}
-
-.tab-content {
-  display: none;
-  background: var(--panel-bg);
-  padding: 30px;
-  border-radius: 0 12px 12px 12px;
-  border: 2px solid var(--border-color);
-}
-.tab-content.active {
-  display: block;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ========================================================================
-           5. GALLERY & PREVIEW
-           ======================================================================== */
+/* --- Gallery --- */
 #galleryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
   margin-top: 25px;
 }
-
 .gallery-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 10px;
-  height: 280px;
+  height: 260px;
   display: flex;
   flex-direction: column;
 }
-
 .img-container {
   flex: 1;
   overflow: hidden;
@@ -175,18 +174,12 @@ input[type="password"]:focus {
   max-height: 100%;
   object-fit: contain;
 }
-
-.card-actions {
-  margin-top: 10px;
-}
-.btn-sm {
-  padding: 8px;
-  font-size: 12px;
+#btnLoadMore {
+  display: none;
+  margin-top: 20px;
 }
 
-/* ========================================================================
-           6. ZOOM LIGHTBOX & LOCK SCREEN
-           ======================================================================== */
+/* --- Overlays --- */
 #lightbox {
   display: none;
   position: fixed;
@@ -227,9 +220,6 @@ input[type="password"]:focus {
   display: flex;
 }
 
-/* ========================================================================
-           7. TOASTS
-           ======================================================================== */
 #toasts {
   position: fixed;
   top: 20px;
@@ -245,12 +235,22 @@ input[type="password"]:focus {
   padding: 12px 20px;
   border-radius: 8px;
   border-left: 4px solid var(--primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   font-size: 14px;
   animation: toastIn 0.3s ease forwards;
 }
 .toast.error {
   border-left-color: var(--danger);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes toastIn {
   from {
