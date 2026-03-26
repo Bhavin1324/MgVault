@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zero-Knowledge Vault</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="./script.js" defer></script>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+   
+    <div id="toasts"></div>
+
+    <div id="lockScreen">
+        <h1 style="color: var(--danger);"><svg class="icon" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Session Expired</h1>
+        <p>Memory purged for your safety.</p>
+        <button class="btn btn-primary" style="width: auto; margin-top: 20px;" onclick="location.reload()">Re-Authenticate</button>
+    </div>
+
+    <div id="lightbox">
+        <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+            <span id="zoomTitle" style="font-weight: bold;">Preview</span>
+            <button class="btn btn-sm btn-secondary" style="width: auto; margin: 0;" onclick="Lightbox.close()">✕ Close</button>
+        </div>
+        <div id="zoomWrapper">
+            <img id="zoomImage" src="" />
+            <div id="zoomOverlay" style="position: absolute; inset: 0; cursor: grab; z-index: 5;"></div>
+        </div>
+    </div>
+
+    <div class="tabs-nav">
+        <div class="tab-link active" onclick="Tabs.show('encryptTab')">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Create Vault
+        </div>
+        <div class="tab-link" onclick="Tabs.show('decryptTab')">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Open Vault
+        </div>
+    </div>
+
+    <div id="encryptTab" class="tab-content active">
+        <h2>Lock Images</h2>
+        <p class="label">Files are stripped of EXIF and encrypted locally.</p>
+        
+        <div class="field-group">
+            <label class="label">Select Photos</label>
+            <input type="file" id="inputFiles" accept="image/*" multiple>
+        </div>
+
+        <div class="field-group">
+            <label class="label">Vault Password</label>
+            <input type="password" id="inputPassEnc" placeholder="Keep it secret, keep it safe...">
+        </div>
+
+        <button id="btnRunEnc" class="btn btn-primary" onclick="App.runEncryption()">Encrypt & Export ZIP</button>
+    </div>
+
+    <div id="decryptTab" class="tab-content">
+        <h2>Unlock Vault</h2>
+        
+        <div class="toggle-group">
+            <input type="radio" id="modeZip" name="decMode" value="zip" checked onchange="Tabs.toggleInputMode()">
+            <label for="modeZip">ZIP Archive</label>
+            <input type="radio" id="modeFolder" name="decMode" value="folder" onchange="Tabs.toggleInputMode()">
+            <label for="modeFolder">Folder</label>
+        </div>
+
+        <div id="boxZip" class="field-group">
+            <label class="label">Vault ZIP</label>
+            <input type="file" id="inputZip" accept=".zip">
+        </div>
+
+        <div id="boxFolder" class="field-group" style="display: none;">
+            <label class="label">Vault Folder</label>
+            <input type="file" id="inputFolder" webkitdirectory directory multiple>
+        </div>
+
+        <div class="field-group">
+            <label class="label">Password</label>
+            <input type="password" id="inputPassDec" placeholder="Enter password">
+        </div>
+
+        <button id="btnRunDec" class="btn btn-primary" onclick="App.runDecryption()">Unlock & View</button>
+        
+        <p id="batchStatus" style="text-align: center; font-size: 13px; color: var(--primary); margin-top: 15px;"></p>
+        <div id="galleryGrid"></div>
+        <button id="btnLoadMore" class="btn btn-secondary" onclick="App.loadNextBatch()">Load Next 10 Images</button>
+    </div>
+</body>
+</html>
